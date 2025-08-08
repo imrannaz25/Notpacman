@@ -4,6 +4,24 @@ const canvasContext = canvas.getContext("2d");
 const pacmanFrames = document.getElementById("animation");
 const ghostFrames = document.getElementById("ghosts");
 
+// Mobile compatibility variables
+let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+let touchStartX = 0;
+let touchStartY = 0;
+let touchEndX = 0;
+let touchEndY = 0;
+let minSwipeDistance = 30;
+
+// Adjust canvas size for mobile
+if (isMobile) {
+    canvas.style.width = "100vw";
+    canvas.style.height = "100vh";
+    canvas.style.touchAction = "none"; // Prevent default touch behaviors
+    document.body.style.margin = "0";
+    document.body.style.padding = "0";
+    document.body.style.overflow = "hidden";
+}
+
 // Helper function to draw colored rectangles on the screen
 let createRect = (x, y, width, height, color) => {
     canvasContext.fillStyle = color;
@@ -287,3 +305,70 @@ window.addEventListener("keydown", (event) => {
         }
     }, 1);
 });
+
+// Mobile touch controls
+if (isMobile) {
+    // Touch start event
+    canvas.addEventListener("touchstart", (event) => {
+        event.preventDefault();
+        const touch = event.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        touchStartX = touch.clientX - rect.left;
+        touchStartY = touch.clientY - rect.top;
+    }, { passive: false });
+
+    // Touch end event for swipe detection
+    canvas.addEventListener("touchend", (event) => {
+        event.preventDefault();
+        const touch = event.changedTouches[0];
+        const rect = canvas.getBoundingClientRect();
+        touchEndX = touch.clientX - rect.left;
+        touchEndY = touch.clientY - rect.top;
+        
+        handleSwipe();
+    }, { passive: false });
+
+    // Prevent scrolling and zooming on mobile
+    document.addEventListener("touchmove", (event) => {
+        event.preventDefault();
+    }, { passive: false });
+
+    // Prevent default context menu on long press
+    canvas.addEventListener("contextmenu", (event) => {
+        event.preventDefault();
+    });
+}
+
+// Handle swipe gestures for mobile
+function handleSwipe() {
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    // Check if swipe distance is sufficient
+    if (Math.max(absX, absY) < minSwipeDistance) {
+        return;
+    }
+
+    // Determine swipe direction
+    if (absX > absY) {
+        // Horizontal swipe
+        if (deltaX > 0) {
+            // Swipe right
+            pacman.nextDirection = DIRECTION_RIGHT;
+        } else {
+            // Swipe left
+            pacman.nextDirection = DIRECTION_LEFT;
+        }
+    } else {
+        // Vertical swipe
+        if (deltaY > 0) {
+            // Swipe down
+            pacman.nextDirection = DIRECTION_BOTTOM;
+        } else {
+            // Swipe up
+            pacman.nextDirection = DIRECTION_UP;
+        }
+    }
+}
